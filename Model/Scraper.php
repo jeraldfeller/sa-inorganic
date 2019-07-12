@@ -1,5 +1,5 @@
 <?php
-require_once(ROOT_DIR.'/../ProxyLoader.php');
+//require_once(ROOT_DIR.'/../ProxyLoader.php');
 /**
  * Created by PhpStorm.
  * User: Grabe Grabe
@@ -10,6 +10,58 @@ class Scraper
 {
     public $debug = TRUE;
     protected $db_pdo;
+
+    public function getLocale(){
+        $pdo = $this->getPdo();
+        $sql = 'SELECT * FROM `locale` ORDER BY `symbol` ASC';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute();
+        $result = array();
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $result[] = $row;
+        }
+        $pdo = null;
+
+        return $result;
+    }
+
+    public function addLocale($locale){
+        $locale = trim(strtolower($locale));
+        $pdo = $this->getPdo();
+        // check table exists
+        $sql = 'show tables like "inorganic1_'.$locale.'"';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute();
+        $result =  $stmt->fetch(PDO::FETCH_BOTH);
+        if($result[0] !== null){
+            return json_encode([
+               'success' => false
+            ]);
+        }else{
+
+            $sql = 'INSERT INTO `locale` SET `symbol` = "'.$locale.'"';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute();
+
+
+            $sql = 'CREATE TABLE IF NOT EXISTS `inorganic1_'.$locale.'` (
+                  `id` int(5) NOT NULL AUTO_INCREMENT,
+                  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  `status` int(2) NOT NULL DEFAULT \'0\',
+                  `keyword` text CHARACTER SET utf8 COLLATE utf8_spanish2_ci,
+                  PRIMARY KEY (`id`)
+                )';
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute();
+        }
+
+
+        return json_encode([
+            'success' => true
+        ]);
+
+    }
 
 	 public function getBrandByAsin($asin){
         $pdo = $this->getPdo();
@@ -58,11 +110,12 @@ $pdo = $this->getPdo();
         return true;
     }
 
-    public function exportProducts()
+    public function exportProducts($locale)
     {
+
         $pdo = $this->getPdo();
         $sql = 'SELECT *
-                FROM `inorganic` ORDER BY `id` DESC';
+                FROM `inorganic` WHERE `locale` = "'.$locale.'" ORDER BY `id` DESC';
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
         $result = array();
@@ -70,22 +123,27 @@ $pdo = $this->getPdo();
             $result[] = $row;
         }
 
-        $sql = 'SELECT *
-                FROM `inorganic_uk` ORDER BY `id` DESC';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $result[] = $row;
-        }
-        $pdo = null;
+//        $sql = 'SELECT *
+//                FROM `inorganic_uk` ORDER BY `id` DESC';
+//        $stmt = $pdo->prepare($sql);
+//        $stmt->execute();
+//        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+//            $result[] = $row;
+//        }
+//        $pdo = null;
         return $result;
     }
 
-    public function exportInputs()
+    public function exportInputs($locale)
     {
+        if($locale == 'it'){
+            $table = 'inorganic1';
+        }else{
+            $table = 'inorganic1_'.$locale;
+        }
         $pdo = $this->getPdo();
         $sql = 'SELECT `keyword`
-                FROM `inorganic1` ORDER BY `id` DESC';
+                FROM `'.$table.'` ORDER BY `id` DESC';
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
         $result = array();
@@ -96,14 +154,21 @@ $pdo = $this->getPdo();
         return $result;
     }
 
-    public function insertKeyword($keyword)
+    public function insertKeyword($keyword, $locale)
     {
+
+        if($locale == 'it'){
+            $table = 'inorganic1';
+        }else{
+            $table = 'inorganic1_'.$locale;
+        }
+
         $pdo = $this->getPdo();
-        $sql = 'SELECT count(`id`) AS rowCount FROM `inorganic1` WHERE `keyword` = "' . $keyword . '"';
+        $sql = 'SELECT count(`id`) AS rowCount FROM `'.$table.'` WHERE `keyword` = "' . $keyword . '"';
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
         if ($stmt->fetch(PDO::FETCH_ASSOC)['rowCount'] == 0) {
-            $sql = 'INSERT INTO `inorganic1` SET `keyword` = "' . $keyword . '"';
+            $sql = 'INSERT INTO `'.$table.'` SET `keyword` = "' . $keyword . '"';
             $stmt = $pdo->prepare($sql);
             $stmt->execute();
         }

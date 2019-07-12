@@ -6,10 +6,11 @@ $scraper = new Scraper();
 
 
 $action = $_GET['action'];
+$locale = $_GET['locale'];
 $date = date('Y-m-d_H-i-s');
 if($action == 'products'){
-    $export = $scraper->exportProducts();
-    $csv = ROOT_DIR.'export-'.$date.'.csv';
+    $export = $scraper->exportProducts($locale);
+    $csv = ROOT_DIR.$locale.'-export-'.$date.'.csv';
     $data[] = implode('","', array(
         'Date Time',
         'Keyword',
@@ -33,8 +34,8 @@ if($action == 'products'){
         ));
     }
 }else if($action == 'inputs'){
-    $export = $scraper->exportInputs();
-    $csv = ROOT_DIR.'inputs-'.$date.'.csv';
+    $export = $scraper->exportInputs($locale);
+    $csv = ROOT_DIR.$locale.'-inputs-'.$date.'.csv';
     $data[] = implode('","', array(
         'Keyword'
     ));

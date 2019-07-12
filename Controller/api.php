@@ -5,6 +5,7 @@ $scraper = new Scraper();
 
 switch ($_GET['action']){
     case 'import':
+        $locale = $_GET['locale'];
         if (isset($_FILES['importFile']['tmp_name'])) {
             if (pathinfo($_FILES['importFile']['name'], PATHINFO_EXTENSION) == 'csv') {
                 $file = $_FILES['importFile']['tmp_name'];
@@ -17,7 +18,7 @@ switch ($_GET['action']){
                         continue;
                     }
                     $keyword = $data[0];
-                    $scraper->insertKeyword($keyword);
+                    $scraper->insertKeyword($keyword, $locale);
                 }
 
                 fclose($fileHandle);
@@ -27,4 +28,10 @@ switch ($_GET['action']){
             echo false;
         }
     break;
+    case 'getLocale':
+        echo json_encode($scraper->getLocale());
+        break;
+    case 'addLocale':
+        echo $scraper->addLocale($_POST['locale']);
+        break;
 }
